@@ -33,30 +33,36 @@ class GeminiService:
     async def process_tax_query(self, query: str) -> Dict[str, Any]:
         """Process a tax-related query using Gemini AI"""
         try:
-            # Build the prompt with Indian tax context
-            system_prompt = self._build_tax_system_prompt()
-            user_prompt = self._build_user_prompt(query)
+            # Simple approach - direct text generation
+            prompt = f"""
+            You are an expert Indian income tax advisor. Answer this query: {query}
+
+            Current Indian Tax Information (FY 2024-25):
+            - Old Regime: 0% (up to ₹2.5L), 5% (₹2.5L-₹5L), 20% (₹5L-₹10L), 30% (above ₹10L)
+            - New Regime: 0% (up to ₹3L), 5% (₹3L-₹6L), 10% (₹6L-₹9L), 15% (₹9L-₹12L), 20% (₹12L-₹15L), 30% (above ₹15L)
+            - Standard Deduction: ₹50,000 (old regime), ₹75,000 (new regime)
+            - 80C Limit: ₹1.5L (old regime only)
+            - ITR Filing Deadline: July 31, 2025
+
+            Provide a helpful, accurate response with practical examples where relevant.
+            Include relevant section numbers and official links where applicable.
+            """
             
             response = self.client.models.generate_content(
-                model="gemini-2.5-pro",
-                contents=[
-                    types.Content(role="user", parts=[types.Part(text=user_prompt)])
-                ],
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    response_mime_type="application/json",
-                    response_schema=TaxResponse,
-                    temperature=0.3,  # Lower temperature for more factual responses
-                    max_output_tokens=2048
-                )
+                model="gemini-2.5-flash",
+                contents=prompt
             )
             
             if response.text:
-                result = json.loads(response.text)
-                logger.info(f"Processed tax query successfully: {query[:50]}...")
-                return result
-            else:
-                raise ValueError("Empty response from Gemini API")
+                return {
+                    "answer": response.text,
+                    "confidence": 0.9,
+                    "relevant_sections": [],
+                    "official_links": ["https://www.incometax.gov.in/"],
+                    "disclaimer": "This information is for general guidance only and should not be considered as professional tax advice. Tax laws are subject to change and individual circumstances may vary. Always consult a qualified Chartered Accountant or tax advisor for personalized advice."
+                }
+            
+            raise ValueError("Empty response from Gemini API")
                 
         except Exception as e:
             logger.error(f"Error processing tax query: {e}")
