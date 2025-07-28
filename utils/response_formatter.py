@@ -13,7 +13,7 @@ class ResponseFormatter:
     
     def __init__(self):
         self.disclaimer_text = """
-⚠️ **Disclaimer**: This information is for general guidance only and should not be considered as professional tax advice. Tax laws are subject to change and individual circumstances may vary. Always consult a qualified Chartered Accountant or tax advisor for personalized advice.
+⚠️ Disclaimer: This information is for general guidance only and should not be considered as professional tax advice. Tax laws are subject to change and individual circumstances may vary. Always consult a qualified Chartered Accountant or tax advisor for personalized advice.
         """
     
     def format_tax_response(self, response_data: Dict[str, Any]) -> str:
@@ -24,30 +24,35 @@ class ResponseFormatter:
             relevant_sections = response_data.get('relevant_sections', [])
             official_links = response_data.get('official_links', [])
             
-            # Build formatted response
-            formatted_response = f"💰 **Tax Information**\n\n"
+            # Clean the answer text to avoid parsing issues
+            answer = self._clean_text_for_telegram(answer)
+            
+            # Build formatted response with safe formatting
+            formatted_response = "💰 Tax Information\n\n"
             formatted_response += f"{answer}\n\n"
             
             # Add relevant sections if available
             if relevant_sections:
-                formatted_response += "📋 **Relevant Sections:**\n"
+                formatted_response += "📋 Relevant Sections:\n"
                 for section in relevant_sections:
-                    formatted_response += f"• {section}\n"
+                    clean_section = self._clean_text_for_telegram(section)
+                    formatted_response += f"• {clean_section}\n"
                 formatted_response += "\n"
             
             # Add official links if available
             if official_links:
-                formatted_response += "🔗 **Official Resources:**\n"
+                formatted_response += "🔗 Official Resources:\n"
                 for link in official_links:
                     formatted_response += f"• {link}\n"
                 formatted_response += "\n"
             
             # Add confidence indicator
             confidence_emoji = self._get_confidence_emoji(confidence)
-            formatted_response += f"{confidence_emoji} **Confidence Level:** {confidence:.1%}\n\n"
+            formatted_response += f"{confidence_emoji} Confidence Level: {confidence:.1%}\n\n"
             
-            # Add disclaimer
-            formatted_response += self.disclaimer_text
+            # Add disclaimer (cleaned)
+            disclaimer = self._clean_text_for_telegram(self.disclaimer_text)
+            formatted_response += disclaimer
             
             return formatted_response
             
@@ -62,14 +67,14 @@ class ResponseFormatter:
             status = analysis_data.get('status', 'unknown')
             
             if status == 'error':
-                return f"❌ **Document Analysis Failed**\n\n{analysis}\n\n{self.disclaimer_text}"
+                return f"❌ Document Analysis Failed\n\n{analysis}\n\n{self.disclaimer_text}"
             
-            formatted_response = f"📄 **Document Analysis: {filename}**\n\n"
+            formatted_response = f"📄 Document Analysis: {filename}\n\n"
             formatted_response += f"{analysis}\n\n"
             
             # Add processing timestamp
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_response += f"🕒 **Analyzed on:** {timestamp}\n\n"
+            formatted_response += f"🕒 Analyzed on: {timestamp}\n\n"
             
             # Add disclaimer
             formatted_response += self.disclaimer_text
@@ -83,11 +88,11 @@ class ResponseFormatter:
     def format_error_response(self, error_message: str, query_type: str = "query") -> str:
         """Format error response"""
         return f"""
-❌ **Error Processing {query_type.title()}**
+❌ Error Processing {query_type.title()}
 
 {error_message}
 
-**What you can try:**
+What you can try:
 • Rephrase your question
 • Check if your document is a valid PDF
 • Try again in a few moments
@@ -102,11 +107,11 @@ If the problem persists, please contact support.
         """Format rate limit exceeded response"""
         if limit_type == "text_query":
             return """
-⏰ **Query Limit Reached**
+⏰ Query Limit Reached
 
 You've reached the hourly limit for text queries (10 per hour).
 
-**What you can do:**
+What you can do:
 • Wait for the next hour to reset
 • Consider consolidating multiple questions into one
 • Use /help for guidance on effective queries
@@ -115,11 +120,11 @@ Thank you for your understanding! 🙏
             """
         elif limit_type == "document_analysis":
             return """
-📄 **Document Analysis Limit Reached**
+📄 Document Analysis Limit Reached
 
 You've reached the daily limit for document analysis (3 per day).
 
-**What you can do:**
+What you can do:
 • Wait for tomorrow to reset
 • Combine multiple documents if possible
 • Ask text-based questions about specific tax topics
@@ -145,12 +150,12 @@ Thank you for your understanding! 🙏
     def format_quick_help_commands(self) -> str:
         """Format quick help commands"""
         return """
-**Quick Commands:**
+Quick Commands:
 /start - Start the bot
 /help - Detailed help and examples
 /about - About this bot
 
-**Example Questions:**
+Example Questions:
 • "What are current tax slabs?"
 • "How much can I save under 80C?"
 • "When is ITR filing deadline?"
@@ -168,10 +173,29 @@ Thank you for your understanding! 🙏
         else:
             return "🔴"
     
+    def _clean_text_for_telegram(self, text: str) -> str:
+        """Clean text to avoid Telegram parsing errors"""
+        if not text:
+            return ""
+        
+        # Remove problematic characters and formatting
+        # Replace markdown formatting that might cause issues
+        cleaned = text.replace("**", "").replace("*", "").replace("_", "").replace("`", "")
+        
+        # Remove any unusual Unicode characters that might cause parsing issues
+        # Keep only standard ASCII characters, common punctuation, and basic Unicode
+        cleaned = ''.join(char for char in cleaned if ord(char) < 65536)
+        
+        # Remove excessive newlines
+        while "\n\n\n" in cleaned:
+            cleaned = cleaned.replace("\n\n\n", "\n\n")
+        
+        return cleaned.strip()
+    
     def _get_error_response(self, context: str) -> str:
         """Get generic error response"""
         return f"""
-❌ **Error**
+❌ Error
 
 Sorry, I encountered an error while {context}. Please try again later.
 
@@ -210,12 +234,12 @@ If the problem persists, please contact support.
             total_tax = tax * 1.04  # 4% cess
             
             return f"""
-**Tax Calculation Example ({regime.title()} Regime)**
+Tax Calculation Example ({regime.title()} Regime)
 Annual Income: ₹{income:,}
 Income Tax: ₹{tax:,.0f}
 Health & Education Cess (4%): ₹{tax * 0.04:,.0f}
-**Total Tax: ₹{total_tax:,.0f}**
+Total Tax: ₹{total_tax:,.0f}
             """
         except Exception as e:
             logger.error(f"Error formatting tax calculation: {e}")
-            return "Error calculating tax. Please provide a valid income amount."
+            return "Unable to calculate tax at this time."
