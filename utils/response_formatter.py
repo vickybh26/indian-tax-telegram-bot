@@ -1,0 +1,221 @@
+"""
+Response formatting utilities for structured bot responses
+"""
+
+import logging
+from typing import Dict, Any, List
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+class ResponseFormatter:
+    """Formats responses for better readability and structure"""
+    
+    def __init__(self):
+        self.disclaimer_text = """
+⚠️ **Disclaimer**: This information is for general guidance only and should not be considered as professional tax advice. Tax laws are subject to change and individual circumstances may vary. Always consult a qualified Chartered Accountant or tax advisor for personalized advice.
+        """
+    
+    def format_tax_response(self, response_data: Dict[str, Any]) -> str:
+        """Format tax query response for Telegram"""
+        try:
+            answer = response_data.get('answer', 'No answer available')
+            confidence = response_data.get('confidence', 0.0)
+            relevant_sections = response_data.get('relevant_sections', [])
+            official_links = response_data.get('official_links', [])
+            
+            # Build formatted response
+            formatted_response = f"💰 **Tax Information**\n\n"
+            formatted_response += f"{answer}\n\n"
+            
+            # Add relevant sections if available
+            if relevant_sections:
+                formatted_response += "📋 **Relevant Sections:**\n"
+                for section in relevant_sections:
+                    formatted_response += f"• {section}\n"
+                formatted_response += "\n"
+            
+            # Add official links if available
+            if official_links:
+                formatted_response += "🔗 **Official Resources:**\n"
+                for link in official_links:
+                    formatted_response += f"• {link}\n"
+                formatted_response += "\n"
+            
+            # Add confidence indicator
+            confidence_emoji = self._get_confidence_emoji(confidence)
+            formatted_response += f"{confidence_emoji} **Confidence Level:** {confidence:.1%}\n\n"
+            
+            # Add disclaimer
+            formatted_response += self.disclaimer_text
+            
+            return formatted_response
+            
+        except Exception as e:
+            logger.error(f"Error formatting tax response: {e}")
+            return self._get_error_response("formatting the response")
+    
+    def format_document_analysis(self, analysis_data: Dict[str, Any], filename: str) -> str:
+        """Format document analysis response"""
+        try:
+            analysis = analysis_data.get('analysis', 'No analysis available')
+            status = analysis_data.get('status', 'unknown')
+            
+            if status == 'error':
+                return f"❌ **Document Analysis Failed**\n\n{analysis}\n\n{self.disclaimer_text}"
+            
+            formatted_response = f"📄 **Document Analysis: {filename}**\n\n"
+            formatted_response += f"{analysis}\n\n"
+            
+            # Add processing timestamp
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_response += f"🕒 **Analyzed on:** {timestamp}\n\n"
+            
+            # Add disclaimer
+            formatted_response += self.disclaimer_text
+            
+            return formatted_response
+            
+        except Exception as e:
+            logger.error(f"Error formatting document analysis: {e}")
+            return self._get_error_response("analyzing the document")
+    
+    def format_error_response(self, error_message: str, query_type: str = "query") -> str:
+        """Format error response"""
+        return f"""
+❌ **Error Processing {query_type.title()}**
+
+{error_message}
+
+**What you can try:**
+• Rephrase your question
+• Check if your document is a valid PDF
+• Try again in a few moments
+• Use /help for guidance
+
+If the problem persists, please contact support.
+
+{self.disclaimer_text}
+        """
+    
+    def format_rate_limit_response(self, limit_type: str) -> str:
+        """Format rate limit exceeded response"""
+        if limit_type == "text_query":
+            return """
+⏰ **Query Limit Reached**
+
+You've reached the hourly limit for text queries (10 per hour).
+
+**What you can do:**
+• Wait for the next hour to reset
+• Consider consolidating multiple questions into one
+• Use /help for guidance on effective queries
+
+Thank you for your understanding! 🙏
+            """
+        elif limit_type == "document_analysis":
+            return """
+📄 **Document Analysis Limit Reached**
+
+You've reached the daily limit for document analysis (3 per day).
+
+**What you can do:**
+• Wait for tomorrow to reset
+• Combine multiple documents if possible
+• Ask text-based questions about specific tax topics
+
+Thank you for your understanding! 🙏
+            """
+        else:
+            return "⏰ You've reached the usage limit. Please try again later."
+    
+    def format_welcome_features(self) -> List[str]:
+        """Get formatted list of bot features"""
+        return [
+            "💵 Income tax calculations and planning",
+            "🏛️ Deduction eligibility (80C, 80D, HRA, etc.)",
+            "📅 Filing deadlines and requirements",
+            "📊 Tax slab information for current FY",
+            "📄 PDF document analysis (Form 16, ITR, etc.)",
+            "🔍 GST basics and compliance queries",
+            "💡 Tax-saving investment guidance",
+            "📋 ITR form selection help"
+        ]
+    
+    def format_quick_help_commands(self) -> str:
+        """Format quick help commands"""
+        return """
+**Quick Commands:**
+/start - Start the bot
+/help - Detailed help and examples
+/about - About this bot
+
+**Example Questions:**
+• "What are current tax slabs?"
+• "How much can I save under 80C?"
+• "When is ITR filing deadline?"
+• "Calculate my HRA exemption"
+        """
+    
+    def _get_confidence_emoji(self, confidence: float) -> str:
+        """Get emoji based on confidence level"""
+        if confidence >= 0.9:
+            return "🟢"
+        elif confidence >= 0.7:
+            return "🟡"
+        elif confidence >= 0.5:
+            return "🟠"
+        else:
+            return "🔴"
+    
+    def _get_error_response(self, context: str) -> str:
+        """Get generic error response"""
+        return f"""
+❌ **Error**
+
+Sorry, I encountered an error while {context}. Please try again later.
+
+If the problem persists, please contact support.
+
+{self.disclaimer_text}
+        """
+    
+    def format_tax_calculation_example(self, income: int, regime: str = "new") -> str:
+        """Format tax calculation example"""
+        try:
+            if regime == "new":
+                # New tax regime calculation
+                tax = 0
+                if income > 300000:
+                    tax += min(income - 300000, 400000) * 0.05
+                if income > 700000:
+                    tax += min(income - 700000, 300000) * 0.10
+                if income > 1000000:
+                    tax += min(income - 1000000, 200000) * 0.15
+                if income > 1200000:
+                    tax += min(income - 1200000, 300000) * 0.20
+                if income > 1500000:
+                    tax += (income - 1500000) * 0.30
+            else:
+                # Old tax regime calculation (simplified)
+                tax = 0
+                if income > 250000:
+                    tax += min(income - 250000, 250000) * 0.05
+                if income > 500000:
+                    tax += min(income - 500000, 500000) * 0.20
+                if income > 1000000:
+                    tax += (income - 1000000) * 0.30
+            
+            # Add cess
+            total_tax = tax * 1.04  # 4% cess
+            
+            return f"""
+**Tax Calculation Example ({regime.title()} Regime)**
+Annual Income: ₹{income:,}
+Income Tax: ₹{tax:,.0f}
+Health & Education Cess (4%): ₹{tax * 0.04:,.0f}
+**Total Tax: ₹{total_tax:,.0f}**
+            """
+        except Exception as e:
+            logger.error(f"Error formatting tax calculation: {e}")
+            return "Error calculating tax. Please provide a valid income amount."
