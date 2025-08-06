@@ -173,8 +173,17 @@ Need help? Just ask your question! 🤝
             # Process query with Gemini
             response = await self.gemini_service.process_tax_query(query)
             
+            # Log response details for debugging
+            logger.info(f"Gemini response status: {response.get('status', 'unknown')}")
+            logger.info(f"Response confidence: {response.get('confidence', 0)}")
+            logger.info(f"Response length: {len(response.get('answer', ''))}")
+            logger.info(f"Response preview: {response.get('answer', '')[:100]}...")
+            
             # Format response
             formatted_response = self.response_formatter.format_tax_response(response)
+            
+            # Log what we're actually sending to user
+            logger.info(f"Sending to user (first 200 chars): {formatted_response[:200]}...")
             
             # Send response without markdown parsing to avoid parse errors
             await update.message.reply_text(formatted_response)

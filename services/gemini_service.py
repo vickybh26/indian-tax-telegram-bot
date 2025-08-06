@@ -40,17 +40,24 @@ Provide a clear, practical answer in 2-3 paragraphs maximum. Be concise but accu
             if context:
                 full_prompt += f"\nAdditional Context: {context}"
             
+            logger.info(f"Sending query to Gemini: {query[:100]}...")
+            
             # Simple direct API call
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=full_prompt
             )
             
-            if not response.text:
+            logger.info(f"Gemini response received. Length: {len(response.text) if response.text else 0}")
+            
+            if not response.text or len(response.text.strip()) == 0:
                 logger.warning("Empty response from Gemini API")
                 return self._get_fallback_response(query)
             
-            # Return structured response
+            # Log the actual response for debugging
+            logger.info(f"Gemini response content: {response.text[:200]}...")
+            
+            # Return structured response with actual Gemini content
             return {
                 "answer": response.text.strip(),
                 "confidence": 0.90,  # High confidence for successful responses
@@ -64,6 +71,7 @@ Provide a clear, practical answer in 2-3 paragraphs maximum. Be concise but accu
                 
         except Exception as e:
             logger.error(f"Error processing tax query: {e}")
+            logger.error(f"Query was: {query}")
             return self._get_fallback_response(query, error=str(e))
     
     async def analyze_document(self, text_content: str, filename: str) -> Dict[str, Any]:
@@ -97,7 +105,7 @@ Provide analysis focusing on:
             logger.error(f"Error analyzing document: {e}")
             return {"analysis": f"Error analyzing document: {e}", "status": "error"}
     
-    def _get_fallback_response(self, query: str, error: str = None) -> Dict[str, Any]:
+    def _get_fallback_response(self, query: str, error: str = "") -> Dict[str, Any]:
         """Generate fallback response when AI processing fails"""
         
         # Provide basic tax information based on common queries
