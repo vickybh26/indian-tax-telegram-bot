@@ -22,7 +22,7 @@ class TaxBot:
     
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.gemini_service = GeminiService(settings.gemini_api_key)
+        self.gemini_service = GeminiService()  # No longer needs api_key parameter
         self.document_processor = DocumentProcessor()
         self.response_formatter = ResponseFormatter()
         self.rate_limiter = RateLimiter()
@@ -176,8 +176,8 @@ Need help? Just ask your question! 🤝
             # Format response
             formatted_response = self.response_formatter.format_tax_response(response)
             
-            # Send response
-            await update.message.reply_text(formatted_response, parse_mode='Markdown')
+            # Send response without markdown parsing to avoid parse errors
+            await update.message.reply_text(formatted_response)
             
             logger.info(f"Processed text query for user {user_id}: {query[:50]}...")
             
@@ -276,15 +276,24 @@ Need help? Just ask your question! 🤝
     async def start(self):
         """Start the bot"""
         logger.info("Starting Telegram bot...")
-        await self.application.initialize()
-        await self.application.start()
-        await self.application.updater.start_polling()
-        
-        logger.info("Bot is running. Press Ctrl+C to stop.")
-        
-        # Keep the bot running
         try:
-            await asyncio.Event().wait()
-        except KeyboardInterrupt:
-            logger.info("Stopping bot...")
-            await self.application.stop()
+            await self.application.initialize()
+            await self.application.start()
+            await self.application.updater.start_polling()
+            
+            logger.info("Bot is running. Press Ctrl+C to stop.")
+            
+            # Keep the bot running
+            try:
+                await asyncio.Event().wait()
+            except KeyboardInterrupt:
+                logger.info("Stopping bot...")
+                await self.application.stop()
+                
+        except Exception as e:
+            if "Conflict" in str(e) and "getUpdates" in str(e):
+                logger.error("Another bot instance is already running. Please stop other instances first.")
+                logger.error("This commonly happens when you have the bot running on multiple platforms (Replit + Railway).")
+            else:
+                logger.error(f"Failed to start bot: {e}")
+            raise
