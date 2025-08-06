@@ -70,20 +70,16 @@ Provide a comprehensive, accurate answer with practical examples where relevant.
     async def analyze_document(self, text_content: str, filename: str) -> Dict[str, Any]:
         """Analyze tax-related document content"""
         try:
-            prompt = f"""Analyze this Indian tax document and provide comprehensive insights:
+            prompt = f"""Analyze this Indian tax document and provide key insights:
 
-Document Name: {filename}
-Document Content: {text_content[:3000]}
+Document: {filename}
+Content excerpt: {text_content[:2000]}
 
-Please analyze and provide:
-1. Document type identification (Form 16, ITR, TDS Certificate, etc.)
-2. Key tax information and financial figures
-3. Important dates and deadlines mentioned
-4. Deductions and exemptions found
-5. Potential issues or discrepancies
-6. Actionable recommendations for the taxpayer
-
-Provide detailed, practical analysis that helps the user understand their tax situation."""
+Provide analysis focusing on:
+- Key tax information and figures
+- Important dates and deadlines
+- Deductions and exemptions
+- Action items or recommendations"""
 
             response = self.client.models.generate_content(
                 model=self.model_name,
