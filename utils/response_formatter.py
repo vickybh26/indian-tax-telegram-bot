@@ -27,22 +27,29 @@ class ResponseFormatter:
             # Clean the answer text to avoid parsing issues
             answer = self._clean_text_for_telegram(answer)
             
+            # Truncate answer if too long (leave room for other content)
+            max_answer_length = 3500  # Leave room for header, links, disclaimer
+            if len(answer) > max_answer_length:
+                answer = answer[:max_answer_length] + "... (truncated for length)"
+            
             # Build formatted response with safe formatting - NO MARKDOWN
             formatted_response = "💰 TAX INFORMATION\n\n"
             formatted_response += f"{answer}\n\n"
             
-            # Add relevant sections if available
+            # Add relevant sections if available (limit to save space)
             if relevant_sections:
                 formatted_response += "📋 RELEVANT SECTIONS:\n"
-                for section in relevant_sections:
+                for section in relevant_sections[:3]:  # Limit to 3 sections
                     clean_section = self._clean_text_for_telegram(section)
+                    if len(clean_section) > 100:
+                        clean_section = clean_section[:100] + "..."
                     formatted_response += f"• {clean_section}\n"
                 formatted_response += "\n"
             
             # Add official links if available
             if official_links:
                 formatted_response += "🔗 OFFICIAL RESOURCES:\n"
-                for link in official_links:
+                for link in official_links[:2]:  # Limit to 2 links to save space
                     formatted_response += f"• {link}\n"
                 formatted_response += "\n"
             
@@ -50,9 +57,13 @@ class ResponseFormatter:
             confidence_emoji = self._get_confidence_emoji(confidence)
             formatted_response += f"{confidence_emoji} CONFIDENCE: {confidence:.0%}\n\n"
             
-            # Add disclaimer (cleaned)
-            disclaimer = self._clean_text_for_telegram(self.disclaimer_text)
-            formatted_response += disclaimer
+            # Add shorter disclaimer
+            short_disclaimer = "⚠️ General information only. Consult a qualified tax advisor for personalized advice."
+            formatted_response += short_disclaimer
+            
+            # Final safety check - if still too long, truncate
+            if len(formatted_response) > 4000:
+                formatted_response = formatted_response[:3900] + "...\n\n" + short_disclaimer
             
             return formatted_response
             

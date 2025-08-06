@@ -24,19 +24,18 @@ class GeminiService:
     async def process_tax_query(self, query: str, context: str = "") -> Dict[str, Any]:
         """Process a tax-related query using Gemini AI"""
         try:
-            # Create comprehensive tax prompt with current context
-            full_prompt = f"""You are an expert Indian tax advisor with comprehensive knowledge of Indian Income Tax Act, GST, and related tax laws.
+            # Create concise tax prompt to avoid overly long responses
+            full_prompt = f"""You are an expert Indian tax advisor. Provide clear, concise answers about Indian tax laws.
 
-Current Tax Information (FY 2024-25):
-- New Regime Tax Slabs: 0% (up to ₹3L), 5% (₹3L-₹6L), 10% (₹6L-₹9L), 15% (₹9L-₹12L), 20% (₹12L-₹15L), 30% (above ₹15L)
-- Old Regime Tax Slabs: 0% (up to ₹2.5L), 5% (₹2.5L-₹5L), 20% (₹5L-₹10L), 30% (above ₹10L)
-- Standard Deduction: ₹50,000 (old regime), ₹75,000 (new regime)
+Current Tax Info (FY 2024-25):
+- New Regime: 0% (up to ₹3L), 5% (₹3L-₹6L), 10% (₹6L-₹9L), 15% (₹9L-₹12L), 20% (₹12L-₹15L), 30% (above ₹15L)
+- Old Regime: 0% (up to ₹2.5L), 5% (₹2.5L-₹5L), 20% (₹5L-₹10L), 30% (above ₹10L)
+- Standard Deduction: ₹50,000 (old), ₹75,000 (new)
 - 80C Limit: ₹1.5L (old regime only)
-- ITR Filing Deadline: July 31, 2025
 
-User Query: {query}
+Query: {query}
 
-Provide a comprehensive, accurate answer with practical examples where relevant. Include relevant section numbers and official links where applicable."""
+Provide a clear, practical answer in 2-3 paragraphs maximum. Be concise but accurate. Include key numbers and examples where helpful."""
             
             if context:
                 full_prompt += f"\nAdditional Context: {context}"
